@@ -1,0 +1,534 @@
+---
+title: "DAPS Air Pollution Monitor Differences"
+author: "Melissa Lowe"
+date: "1/14/19"
+output: pdf_document
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.path='Figs/')
+```
+
+
+```{r, include=FALSE}
+library(lme4)
+library(lmtest)
+library(dplyr)
+library(readxl)
+library(utils)
+library(knitr)
+library(ggplot2)
+library(plyr)
+library(lmerTest)
+library(reshape2)
+library(stargazer)
+library(rmcorr)
+
+```
+
+
+# Data Steps:
+
+```{r, include=FALSE}
+setwd("~/Desktop")
+dapss <- read.csv("~/Desktop/ReproducibleItemsforDAPS/DAPS_2Cohort.csv")
+daps <-dapss[, -1]
+```
+
+
+# Basic Correlations
+```{r, echo=FALSE}
+
+#correlation of ozone
+o3corr <- cor.test(daps$vest_O3, daps$CDPHE_O3_mean, method="pearson")
+o3corr
+
+plot(daps$vest_O3, daps$CDPHE_O3_mean)
+
+#correlation of pm10
+pm10corr <- rmcorr(id, log_vest_pm10, log_msp_pm10,daps)
+pm10corr
+
+pm10corr2 <-rmcorr(id, log_vest_pm10, log(daps$CDPHE_PM10_mean), daps)
+pm10corr2
+
+pm10corr3 <- rmcorr(id, log_msp_pm10, log(CDPHE_PM10_mean), daps)
+pm10corr3
+
+
+rmcorr(id, log(daps$CDPHE_PM10_mean), daps$log_FeNO_avg, daps)
+rmcorr(id, log_vest_pm10, daps$log_FeNO_avg, daps)
+
+
+
+b <- ggplot(daps)
+b + 
+geom_point(aes(log_vest_pm10, log_msp_pm10), color = "red1", shape =17)+
+geom_smooth(aes(log_vest_pm10, log_msp_pm10), color = "red1", method="lm", linetype = "dotdash")+
+geom_point(aes(log_vest_pm10, log(CDPHE_PM10_mean)),color= "mediumblue", shape = 19) +
+geom_smooth(aes(log_vest_pm10, log(CDPHE_PM10_mean)), color = "mediumblue", method ="lm", linetype= "solid") +
+annotate(geom="text", x=4.9, y=1.9, label="CDPHE Mean vs. Wearable Monitor, \n corr = -0.15, p=0.21",
+              color="mediumblue", fontface="bold", family= "Times")+
+annotate(geom="text", x=5, y=5.5, label="MSP vs. Wearable Monitor, \n corr = 0.5, p=5.1e-6",
+              color="red1", fontface="bold", family="Times")+
+xlab("log(PM10), wearable monitor") +
+ylab("log(PM10)")+ 
+labs(title = "Correlation with Wearable Monitor")+ 
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+theme(plot.title=element_text(family="Times", face="bold", size=20)) +
+theme(text = element_text(family="Times",size = 20, color= "black"))
+
+
+
+b <- ggplot(daps)
+b + 
+geom_point(aes(exp(log_vest_pm10), exp(log_msp_pm10)), color = "red1", shape =17)+
+geom_smooth(aes(exp(log_vest_pm10), exp(log_msp_pm10)), color = "red1", method="lm", linetype = "dotdash")+
+geom_point(aes(exp(log_vest_pm10), CDPHE_PM10_mean),color= "mediumblue", shape = 19) +
+geom_smooth(aes(exp(log_vest_pm10), CDPHE_PM10_mean), color = "mediumblue", method ="lm", linetype= "solid") +
+annotate(geom="text", x=200, y=40, label="CDPHE Mean vs. Wearable Monitor, \n corr = -0.15, p=0.21",
+              color="mediumblue", fontface="bold", family= "Times")+
+annotate(geom="text", x=150, y=150, label="Stationary vs. Wearable Monitor, \n corr = 0.5, p=5.1e-6",
+              color="red1", fontface="bold", family="Times")+
+xlab("PM10, wearable monitor") +
+ylab("PM10")+ 
+labs(title = "Correlation with Wearable Monitor")+ 
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+theme(plot.title=element_text(family="Times", face="bold", size=20)) +
+theme(text = element_text(family="Times",size = 20, color= "black"))
+
+```
+
+
+```{r}
+
+b <- ggplot(daps)
+b + 
+geom_point(aes(log_vest_pm10, log_FeNO_avg), color = "green3")+
+geom_smooth(aes(log_vest_pm10, log_FeNO_avg), color = "green3")+
+geom_point(aes(log_msp_pm10, log_FeNO_avg),color= "blue") +
+geom_smooth(aes(log_msp_pm10, log_FeNO_avg), color = "blue") +
+annotate(geom="text", x=4.5, y=1.5, label="log(FeNO) and \n MSP PM10",
+              color="blue", size =7)+
+  annotate(geom="text", x=2.5, y=5, label="log(FeNO) and \n VEST PM10",
+              color="darkgreen", size=7)+
+xlab("log(PM10)") +
+ylab("log(FeNO)")+ 
+labs(title = "Exhaled Nitric Oxide and PM10 Exposure")+ 
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+theme(plot.title=element_text(family="Times", face="bold", size=20)) +
+theme(text = element_text(family="Times",size = 20, color= "black")) 
+
+```
+
+```{r}
+plot(daps$log_vest_pm10, daps$log_msp_pm10)
+plot(daps$log_vest_pm10, daps$CDPHE_PM10_mean)
+
+#correlation of no2
+
+no2corr <- rmcorr(id, log_vest_NO2, log_stat_NO2,daps)
+no2corr
+
+no2corr2 <- rmcorr(id,log_vest_NO2, log(log_CDPHE_NO2_mean), daps)
+no2corr2
+
+no2corr3 <- rmcorr(id, log_stat_NO2, log(log_CDPHE_NO2_mean), daps)
+no2corr3
+
+plot(daps$log_vest_NO2, daps$log_stat_NO2)
+
+plot(daps$log_CDPHE_NO2_mean, daps$log_stat_NO2)
+#correlation of glucans with endotoxins
+glendocorr3 <- cor.test(daps$gluc_m3, log(daps$endo_m3), method="pearson")
+glendocorr3
+
+
+b <- ggplot(daps)
+b + 
+geom_point(aes(log_vest_NO2, log_CDPHE_NO2_mean), color = "green3")+
+geom_smooth(aes(log_vest_NO2, log_CDPHE_NO2_mean), color = "green3")+
+geom_point(aes(log_vest_NO2, log_stat_NO2),color= "blue") +
+geom_smooth(aes(log_vest_NO2, log_stat_NO2), color = "blue") +
+annotate(geom="text", x=2.5, y=5, label="CDPHE Mean and Vest NO2, \n corr = 0.23, p=0.05",
+              color="black")+
+  annotate(geom="text", x=2, y=0, label="Stat. and Vest NO2, \n corr = 0.95, p=2.5e-36",
+              color="blue")+
+xlab("log(NO2 Vest)") +
+ylab("log(NO2)")+ 
+labs(title = "Correlation with Vest Monitor")+ 
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+theme(plot.title=element_text(family="Times", face="bold", size=20)) +
+theme(text = element_text(family="Times",size = 20, color= "black")) 
+
+
+
+c <- ggplot(daps)
+c + 
+geom_point(aes(log_vest_NO2, log_stat_NO2), color = "red1", shape =17)+
+geom_smooth(aes(log_vest_NO2, log_stat_NO2), color = "red1", method="lm", linetype = "dotdash")+
+geom_point(aes(log_vest_NO2, log_CDPHE_NO2_mean),color= "mediumblue", shape = 19) +
+geom_smooth(aes(log_vest_NO2, log_CDPHE_NO2_mean), color = "mediumblue", method ="lm", linetype= "solid") +
+annotate(geom="text", x=0, y=4.5, label="CDPHE Mean vs. Wearable NO2, \n corr = 0.23, p=0.05",
+              color="mediumblue", fontface="bold", family= "Times")+
+annotate(geom="text", x=2, y=0, label="Stationary vs. Wearable NO2 , \n corr = 0.95, p=2.5e-36",
+              color="red1", fontface="bold", family="Times")+
+xlab("log(NO2) wearable monitor") +
+ylab("log(NO2), CDPHE or stationary")+
+labs(title = "Relative Correlation with Wearable Monitor")+ 
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+theme(plot.title=element_text(family="Times", face="bold", size=20)) +
+theme(text = element_text(family="Times",size = 20, color= "black")) 
+
+c <- ggplot(daps)
+c + 
+geom_point(aes(exp(log_vest_NO2), exp(log_stat_NO2)), color = "red1", shape =17)+
+geom_smooth(aes(exp(log_vest_NO2), exp(log_stat_NO2)), color = "red1", method="lm", linetype = "dotdash")+
+geom_point(aes(exp(log_vest_NO2), exp(log_CDPHE_NO2_mean)),color= "mediumblue", shape = 19) +
+geom_smooth(aes(exp(log_vest_NO2), exp(log_CDPHE_NO2_mean)), color = "mediumblue", method ="lm", linetype= "solid") +
+annotate(geom="text",  x=30, y=0, label="CDPHE Mean vs. Wearable NO2, \n corr = 0.23, p=0.05",
+              color="mediumblue", fontface="bold", family= "Times")+
+annotate(geom="text", x=40, y=90, label="Stationary vs. Wearable NO2, \n corr = 0.95, p=2.5e-36",
+              color="red1", fontface="bold", family="Times")+
+xlab("NO2, wearable monitor") +
+ylab("NO2")+ 
+labs(title = "Relative Correlation with Wearable Monitor")+ 
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+theme(plot.title=element_text(family="Times", face="bold", size=20)) +
+theme(text = element_text(family="Times",size = 20, color= "black"))
+
+```
+
+
+What are the differences between personal, stationary, and ambient monitors? 
+
+Subset by air pollution. What we basically want to see is that over time, there is a significant difference between the categorical groups of pollution monitor types. However, we will end up having single column describing the various exposures and then a column of categorical variables that detail what kind of pollution is of interest. 
+
+This model will end up looking like the following: Ypollution = Bo + B1monitor type + B2season + B3type*season
+
+```{r, include=FALSE}
+#### only run this once so that the data sets don't get mixed up ####
+
+names(daps) #find the right columns
+pollution <- daps[,c(1:3, 27:40, 56:61)] #subset daps to only pollution data for simplification
+names(pollution) #check that we have the right names
+
+id <- daps$id
+visit <- daps$visit
+season <- daps$season
+
+```
+
+```{r, include=FALSE}
+
+##### PM10 #####
+wearable <- exp(daps$log_vest_pm10)
+stationary <- exp(daps$log_msp_pm10)
+cdphe_mean <- (daps$CDPHE_PM10_mean)
+cdphe_max <- exp(daps$log_CDPHE_PM10_max)
+
+
+PM10 <- as.data.frame(cbind(id, visit, season, wearable, stationary, cdphe_mean, cdphe_max))
+
+pm10 <- melt(PM10, id.vars = c("id", "visit", "season"), measure.vars = c( "wearable", "stationary","cdphe_mean","cdphe_max"), variable.name = "type", value.name = "PM10",
+  factorsAsStrings = TRUE)
+
+names(pm10) <- c("id", "visit", "season", "type", "PM10")
+
+```
+
+```{r, include=FALSE}
+#### NO2 #####
+wearable <- exp(daps$log_vest_NO2)
+stationary <- exp(daps$log_stat_NO2)
+cdphe_mean <- exp(daps$log_CDPHE_NO2_mean)
+cdphe_max <- exp(daps$log_CDPHE_NO2_max)
+  
+NO2 <- as.data.frame(cbind(id, visit, season, wearable, stationary, cdphe_mean, cdphe_max))
+
+no2 <- melt(NO2, id.vars = c("id", "visit", "season"), measure.vars = c( "wearable", "stationary","cdphe_mean","cdphe_max"),
+  variable.name = "type", value.name = "NO2",
+  factorsAsStrings = TRUE)
+
+names(no2) <- c("id", "visit", "season", "type", "NO2")
+```
+
+
+```{r, include=FALSE}
+#### O3 #####
+wearable <- daps$vest_O3
+cdphe_mean <- daps$CDPHE_O3_mean
+cdphe_max <- daps$CDPHE_O3_max
+
+O3 <- as.data.frame(cbind(id, visit, season, wearable, cdphe_mean, cdphe_max))
+
+o3 <- melt(O3, id.vars = c("id", "visit", "season"), measure.vars = c( "wearable", "cdphe_mean", "cdphe_max"),
+  variable.name = "type", value.name = "O3",
+  factorsAsStrings = TRUE)
+
+names(o3) <- c("id", "visit", "season", "type", "O3")
+```
+
+# ```{r, include=FALSE}
+#### ETS ####
+
+vest <- daps$vest_ETS
+msp <- daps$MSP_ETS
+
+
+ETS <- as.data.frame(cbind(id, visit, season, vest, msp))
+
+ets <- melt(ETS, id.vars = c("id", "visit", "season"), measure.vars = c( "vest", "msp"),
+  variable.name = "type", value.name = "ETS",
+  factorsAsStrings = TRUE)
+#```
+
+#```{r, include=FALSE}
+#### BRC ####
+vest <- daps$vest_BrC
+msp <- daps$MSP_BrC
+
+BRC <- as.data.frame(cbind(id, visit, season, vest, msp))
+
+brc <- melt(BRC, id.vars = c("id", "visit", "season"), measure.vars = c("vest", "msp"),
+  variable.name = "type", value.name = "BrC",
+  factorsAsStrings = TRUE)
+#```
+
+#```{r, include=FALSE}
+#### BC #####
+  
+vest <- daps$vest_BC
+msp <- daps$MSP_BC
+
+BC <- as.data.frame(cbind(id, visit, season, vest, msp))
+
+bc <- melt(BC, id.vars = c("id", "visit", "season"), measure.vars = c( "vest", "msp"),
+  variable.name = "type", value.name = "BlC",
+  factorsAsStrings = TRUE)
+
+
+#```
+
+Ok, now begin actually running the analyses. We will treat season as a factor and type as a factor and then have an interaction term for type*season
+
+
+# PM10, MEASUREMENT DIFFERENCES
+
+
+```{r, echo=FALSE}
+##### PM10 #####
+
+pm10_2 <- subset(pm10, type != "cdphe_max")
+
+pm10_3 <- subset(pm10_2, PM10 < 200)
+
+#with the personal monitor as the reference category
+pm10monit <- lmer(PM10 ~ as.factor(type) + as.factor(season) + as.factor(type)*as.factor(season) + (1|id), data = pm10_2 )
+#summary(pm10monit)
+
+#with the msp as the reference category
+
+pm10_2 <- within(pm10_2, type <- relevel(type, ref = 3))
+pm10monit2 <- lmer(PM10 ~ as.factor(type) + as.factor(season) + as.factor(type)*as.factor(season) + (1|id), data = pm10_2 )
+#summary(pm10monit2)
+
+
+p <- ggplot(pm10_2, aes(type, PM10))
+p + geom_boxplot()+
+  xlab("Monitor")+
+  ylab("PM10")+ 
+  labs(title = "Measured Pollutant by Monitor Type, w/outlier", color ="Type")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  theme(plot.title=element_text(family="Times", face="bold", size=20)) +theme(text = element_text(family="Times",size = 20, color= "black"))
+
+
+b <- ggplot(pm10_2, aes(season, PM10, color=type, shape=type))
+b + geom_point()+ xlab("Season") + ylab("PM10")+ labs(title = "Measured Pollutant by Monitor Type, w/outlier", color ="Type", shape ="Type")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text(family="Times", face="bold", size=20)) + geom_smooth() + scale_x_continuous(labels=c("1" = "Summer", "2" = "Fall", "3"= "Winter", "4"= "Spring"))+ scale_color_manual(values = c("wearable" = "blue", "stationary" = "limegreen", "cdphe_mean" = "red")) +theme(text = element_text(family="Times",size = 20, color= "black")) 
+
+
+b <- ggplot(pm10_3, aes(season, PM10, color=type, shape=type))
+b + geom_point()+ xlab("Season") + ylab("PM10")+ labs(title = "Measured Pollutant by Monitor Type, w/o outlier", color ="Type", shape ="Type")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+ scale_color_manual(values = c("wearable" = "blue", "stationary" = "limegreen", "cdphe_mean" = "red"))+theme(plot.title=element_text(family="Times", face="bold", size=20)) + geom_smooth() + scale_x_continuous(labels=c("1" = "Summer", "2" = "Fall", "3"= "Winter", "4"= "Spring"))+theme(text = element_text(family="Times",size = 20, color= "black")) 
+
+
+
+
+
+
+
+
+
+
+class(pm10monit) <- "lmerMod"
+class(pm10monit2) <- "lmerMod"
+
+models <- list(pm10monit, pm10monit2)
+
+
+stargazer(models, type="text", style="all", ci=T, ci.level=0.95, summary=FALSE, digits=4, star.cutoffs=c(0.05, 0.01, 0.001), title="PM10 Monitor Differences", covariate.labels=c( "Vest", "MSP", "CDPHE Mean", "Fall", "Winter", "Spring", "Vest*Fall", "MSP*Fall", "CDPHE*Fall", "Vest*Winter", "MSP*Winter", "CDPHE*Winter","Vest*Spring", "MSP*Spring", "CDPHE*Spring"))
+
+
+
+```
+This indicates that the difference between the personal monitor and the other methods of monitoring are not significant over time except for cdphe_max. This is supported by the box plots. It does look like on average, the personal monitor exposures are higher than the in-home stationary monitors. 
+
+
+
+
+# NO2 MEASUREMENT DIFFERENCES
+
+
+```{r, echo=FALSE}
+#### NO2 #####
+
+no2_2 <- subset(no2, type != "cdphe_max")
+
+no2_3 <- subset(no2_2, id != 11)
+
+#with the personal monitor as the reference category
+no2monit <- lmer(NO2 ~ as.factor(type) + as.factor(season) + as.factor(type)*as.factor(season) + (1|id), data = no2_2 )
+#summary(no2monit)
+
+#with the msp as the reference category
+
+no2_2 <- within(no2_2, type <- relevel(type, ref = 3))
+no2monit2 <- lmer(NO2 ~ as.factor(type) + as.factor(season) + as.factor(type)*as.factor(season) + (1|id), data = no2_2 )
+#summary(no2monit2)
+
+
+
+
+
+p <- ggplot(no2_3, aes(type, NO2))
+p + geom_boxplot()+xlab("Monitor")+ ylab("NO2")+ labs(title = "Measured Pollutant by Monitor Type", color ="Type")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text(family="Times", face="bold", size=20)) +theme(text = element_text(family="Times",size = 20, color= "black"))
+
+b <- ggplot(no2_2, aes(season, NO2, color=type, shape =type))
+b + geom_point()+ xlab("Season") + ylab("NO2")+ labs(title = "Measured Pollutant by Monitor Type, w/outlier", color ="Type", shape ="Type")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text(family="Times", face="bold", size=20)) + geom_smooth()+ scale_color_manual(values = c("wearable" = "blue", "stationary" = "limegreen", "cdphe_mean" = "red")) + scale_x_continuous(labels=c("1" = "Summer", "2" = "Fall", "3"= "Winter", "4"= "Spring"))+theme(text = element_text(family="Times",size = 20, color= "black"))
+
+b <- ggplot(no2_3, aes(season, NO2, color=type, shape =type))
+b + geom_point()+ xlab("Season") + ylab("NO2")+ labs(title = "Measured Pollutant by Monitor Type, w/o outlier", color ="Type", shape ="Type")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text(family="Times", face="bold", size=20)) + scale_color_manual(values = c("wearable" = "blue", "stationary" = "limegreen", "cdphe_mean" = "red"))+ geom_smooth() + scale_x_continuous(labels=c("1" = "Summer", "2" = "Fall", "3"= "Winter", "4"= "Spring"))+theme(text = element_text(family="Times",size = 20, color= "black"))
+
+class(no2monit) <- "lmerMod"
+class(no2monit2) <- "lmerMod"
+
+models <- list(no2monit, no2monit2)
+
+
+stargazer(models, type="text", style="all", ci=T, ci.level=0.95, summary=FALSE, digits=4, star.cutoffs=c(0.05, 0.01, 0.001), title="NO2 Monitor Differences", covariate.labels=c( "Vest", "MSP", "CDPHE Mean", "Fall", "Winter", "Spring", "Vest*Fall", "MSP*Fall", "CDPHE*Fall", "Vest*Winter", "MSP*Winter", "CDPHE*Winter","Vest*Spring", "MSP*Spring", "CDPHE*Spring"))
+
+
+
+```
+We see that the personal monitors and the msp differ significantly from the CDPHE monitors but that the stationary monitor does not differ significantly from the personal monitor which is our reference group. The stationary monitor is significantly higher than the outdoor monitor in the fall in particular. The difference between the vest and stationary monitors is smaller than that with the PM10 - this makes sense if the primary exposures are from in the home. 
+
+
+# OZONE MEASUREMENT DIFFERENCES
+
+
+```{r, echo=FALSE}
+o3_2 <- subset(o3, type != "cdphe_max")
+
+
+#### O3 #####
+o3monit <- lm(O3 ~ as.factor(type), data = o3_2 )
+#summary(o3monit)
+
+
+#the t-tests should give similar results
+#t.test(O3$vest, O3$cdphe_mean, paired=TRUE, conf.level=0.95)
+
+
+p <- ggplot(o3_2, aes(type, O3))
+p + geom_boxplot() +xlab("Monitor")+ ylab("Ozone")+ labs(title = "Measured Pollutant by Monitor Type", color ="Type")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text(family="Times", face="bold", size=15)) +theme(text = element_text(family="Times",size = 20, color= "black"))
+
+stargazer(o3monit, type="text", style="all", ci=T, ci.level=0.95, summary=FALSE, digits=4, star.cutoffs=c(0.05, 0.01, 0.001), title="Ozone Monitor Differences", covariate.labels=c("CDPHE Mean", "Vest"))
+
+
+```
+Here, we can see that the personal monitor for ozone differs significantly from the mean CDPHE value. Again, this makes sense given that ozone is primarily an outdoor pollutant and our subjects spend most of their time indoors.
+
+
+# ETS MEASUREMENT DIFFERENCES
+
+#```{r, echo=FALSE}
+#### ETS ####
+
+ETSmonit <- lmer(ETS ~ as.factor(type)*as.factor(season) + (1|id), data = ets )
+#summary(ETSmonit)
+
+
+p <- ggplot(ets, aes(type, ETS))
+p + geom_boxplot() +xlab("Monitor")+ ylab("ETS")+ labs(title = "Measured Pollutant by Monitor Type", color ="Type")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text(family="Times", face="bold", size=20)) +theme(text = element_text(family="Times",size = 25, color= "black"))
+
+
+p + geom_boxplot(aes(color = as.factor(season))) + labs(title= "Measured Pollutant by Monitor Type", x="Monitor", y="ETS", 
+       col="Season")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text(family="Times", face="bold", size=20)) + scale_color_manual("Season", labels = c("Summer", "Fall", "Winter", "Spring"), values = c("green3", "chocolate1", "dodgerblue1", "magenta")) +theme(text = element_text(family="Times",size = 20, color= "black"))
+
+
+class(ETSmonit) <- "lmerMod"
+stargazer(ETSmonit, type="text", style="all", ci=T, ci.level=0.95, summary=FALSE, digits=4, star.cutoffs=c(0.05, 0.01, 0.001), title="ETS Monitor Differences", covariate.labels=c( "MSP", "Fall", "Winter", "Spring", "MSP*Fall", "MSP*Winter", "MSP*Spring", "Vest"))
+
+#```
+For the new values of ETS as of Fall 2018. We can see that the vest values differ from the stationary monitor values. There is still a significant difference by season (specifically between winter and summer where winter exposures are higher for the personal monitor) and the mean msp exposure tends to be lower. 
+
+I should note that I ran this model without the interaction and with the interaction terms and the AIC is quite a bit lower with the interaction terms included.
+
+
+# BRC MEASUREMENT DIFFERENCES
+
+#```{r, echo=FALSE}
+#### BRC ####
+
+BrCmonit <- lmer(BrC ~ as.factor(type) + as.factor(season) + as.factor(type)*as.factor(season) + (1|id), data = brc)
+#summary(BrCmonit)
+
+p <- ggplot(brc, aes(type, BrC))
+p + geom_boxplot()+xlab("Monitor")+ ylab("Brown Carbon")+ labs(title = "Measured Pollutant by Monitor Type")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text(family="Times", face="bold", size=20)) +theme(text = element_text(family="Times",size = 20, color= "black"))
+
+p + geom_boxplot(aes(color = as.factor(season))) + labs(title= "Measured Pollutant by Monitor Type", x="Monitor", y="Brown Carbon", col="Season")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text(family="Times", face="bold", size=20)) + scale_color_manual("Season", labels = c("Summer", "Fall", "Winter", "Spring"), values = c("green3", "chocolate1", "dodgerblue1", "magenta")) +theme(text = element_text(family="Times",size = 20, color= "black"))
+
+class(BrCmonit) <- "lmerMod"
+stargazer(BrCmonit, type="text", style="all", ci=T, ci.level=0.95, summary=FALSE, digits=4, star.cutoffs=c(0.05, 0.01, 0.001), title="BrC Monitor Differences", covariate.labels=c( "MSP", "Fall", "Winter", "Spring", "MSP*Fall", "MSP*Winter", "MSP*Spring", "Vest"))
+#```
+The new values for brown carbon indicate that there is a significant difference between indoor and personal monitors. Personal monitors for BrC have higher estimates of exposure than the stationary monitors - this trend does not have a component related to time. Winter is significantly lower for brown carbon exposure than summer. It looks like the stationary monitor is slightly higher during the fall than the personal monitor during the fall but this could be a spurious conclusion. 
+
+
+# BLACK CARBON MEASUREMENT DIFFERENCES
+
+
+#```{r, echo=FALSE}
+
+#### BC #####
+  
+BCmonit <- lmer(BlC ~ as.factor(type)*as.factor(season) + (1|id), data = bc)
+#summary(BCmonit)
+
+p <- ggplot(bc, aes(type, BlC))
+p + geom_boxplot()+xlab("Monitor")+ ylab("Black Carbon")+ labs(title = "Measured Pollutant by Monitor Type")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text(family="Times", face="bold", size=20))+theme(text = element_text(family="Times",size = 20, color= "black")) 
+
+p + geom_boxplot(aes(color = as.factor(season))) + labs(title= "Measured Pollutant by Monitor Type", x="Monitor", y="Black Carbon", col="Season")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text(family="Times", face="bold", size=20)) + scale_color_manual("Season", labels = c("Summer", "Fall", "Winter", "Spring"), values = c("green3", "chocolate1", "dodgerblue1", "magenta")) +theme(text = element_text(family="Times",size = 20, color= "black"))
+
+class(BCmonit) <- "lmerMod"
+stargazer(BCmonit, type="text", style="all", ci=T, ci.level=0.95, summary=FALSE, digits=4, star.cutoffs=c(0.05, 0.01, 0.001), title="BC Monitor Differences", covariate.labels=c( "MSP", "Fall", "Winter", "Spring", "MSP*Fall", "MSP*Winter", "MSP*Spring", "Vest"))
+
+#```
+There are no significant differences between the stationary monitors and the personal monitors but values of black carbon in the spring are slightly higher.  

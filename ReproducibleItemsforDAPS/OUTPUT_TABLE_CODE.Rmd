@@ -1,0 +1,147 @@
+---
+title: "DAPS_Regression_Output_Table_Code"
+author: "Melissa Lowe"
+date: "5/23/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+
+library(msm)
+library(sandwich)
+library(ggplot2)
+library(foreign)
+library(ggplot2)
+library(MASS)
+library(Hmisc)
+library(reshape2)
+library(pbkrtest)
+library(lme4)
+library(lmerTest)
+library(nlme)
+library(dplyr)
+library(RColorBrewer)
+library(rmcorr)
+library(plyr)
+library(knitr)
+library(table1)
+library(stargazer)
+library(lsmeans)
+library(magrittr)
+library(tidyr)
+library(stringr)
+```
+Extract a smaller number of values to make into a table:
+
+
+```{r}
+
+output <- read.csv("~/Desktop/ReproducibleItemsforDAPS/DAPS_OUTPUT1.csv", header=TRUE)
+
+names(output)#what are the names of the columns currently?
+
+#create an indicator for any empty rows so that I can delete them
+output$ind <-ifelse(is.na(output$Exposure.Coefficient)&is.na(output$VAR.COR),1,0)
+
+#remove the empty rows - there's only 1
+output3 <- subset(output, ind == 0) #remove blank lines
+
+#output3 is now workable
+
+#now I want to add in a vector describing the exposure only - not the full model structure
+
+#all of the possible model structures
+mod.names <- levels(output3$Model.Structure) #what are the model structures
+
+#split the string of the model names to get rid of the x~
+mod.names2 <- sapply(strsplit(mod.names, "[~]"), '[',2) #get rid of the the x and the ~
+#for each item in mod.names2, separate the item by the location of the + and then only keep the first item of the stored list
+
+mod.names3 <-lapply(mod.names3 <- strsplit(mod.names2,"+", 2), function(x) { x[1]}) # pull apart everything in between the + and then keep only the first item on the list which is always the exposure value anyway
+#trim the white spaces around the exposure names and then unlist them to turn them back into a vector
+mod.names4 <- unlist(lapply(mod.names3 <- str_trim(mod.names3), function(x) {x[1]})) #do that again but make it back into a vector and strip the white space
+
+mod.names4 <- mod.names4[c(2:30)] #get rid of the blank one
+mod.names5 <- unique(mod.names4)#pull only the unique exposure variable names
+
+#output3$cheese <- output3$Model.Structure #for testing primarily
+
+#if the output3$Model.Structure contains a string matching to a string in mod.names5, then create a new variable with the string in mod.name 5 as the value. Store in an empty dataframe
+
+a <-  data.frame(matrix(NA, nrow=nrow(output3), ncol=11)) #create an empty data frame the same number of rows as output3
+for (i in 1:11){
+a[i] <- as.data.frame(str_match(output3$Model.Structure, mod.names5[i])) #for each of the 11 unique exposures, test if they are contained in the string. if they are, then create a new variable that is filled with the appropriate exposure name.
+}
+
+#get rid of the NA's but merge the 11 columns into a single one.
+a$Exposure <- apply(a[c(1:11)], 1, function(x) toString(na.omit(x)))
+
+#bind the single column to the original dataframe
+output3 <- cbind(output3, a$Exposure)
+library(reshape)
+#change the names to be pretty
+names(output3) <- c("OUTCOME","Exposure.Coefficient","Std..Error.Coef..Exp", "Residual.Variance.of.Model","Components.of.Variance.Correlation","VAR.COR","SD.COR","Model.Structure","IQR.of.Exposure","Coef.IQR", "ind","Exposure")
+names(output3)
+
+#get rid of the unnecessary indicator variable
+OUTPUT1 <- output3[,-11]
+
+
+OUTPUT1$count <- ifelse(OUTPUT1$Components.of.Variance.Correlation== "Residual", 1, 0) #the residual variance is already in there, flag the rows that only have this
+OUTPUT2 <- subset(OUTPUT1,OUTPUT1$count !=1) #get rid of those unnecessary rows
+OUTPUT2$Residual.SD.Model <- sqrt(OUTPUT2$Residual.Variance.of.Model) #get the standard error in case they want that
+names(OUTPUT2) #check the names
+OUTPUT2 <- OUTPUT2[,-12] #drop the indicator variable
+
+
+#it would be great to replace the x in each of the model structure names with the actual outcome name
+
+for (i in 1:nrow(OUTPUT2)){
+OUTPUT2$Model.Structure2[i] <- str_replace(OUTPUT2$Model.Structure[i], "x", as.character(OUTPUT2$OUTCOME[i]))
+}
+
+
+names(OUTPUT2)
+
+
+names(OUTPUT2) <- c("Outcome","ExposureCoefficient","StdErrorCoefExp","ResidModelVariance","RandomEffectLabel","RandEffectVar", "RandEffectSD","ModelStructure","IQRExposure","Coef_IQR","Exposure","ResidSDModel","ModelStructure2")
+
+check1 <-OUTPUT2[,c(1,11,13,2,3,4,5,6,9,10,8,7,12)]
+names(check1)
+
+OUTPUT3 <- check1[,c( 1:10)]
+names(OUTPUT3) <- c("Outcome","Exposure","ModelStructure2","ExposureCoefficient","StdErrorCoefExp","ResidModelVariance","RandomEffectLabel","RandEffectVar","IQRExposure","Coef_IQR")
+
+#print the output again because we want it to be easy to manipulate into smaller and more easily interpretable tables.
+write.table(OUTPUT3, file = "DAPS_OUTPUT2.csv", append = TRUE, quote = FALSE, sep = ",",
+            eol = "\n\n", na =" ", dec = ".", row.names = FALSE,
+            col.names = TRUE)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

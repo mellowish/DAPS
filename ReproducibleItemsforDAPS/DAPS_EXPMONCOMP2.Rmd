@@ -1,0 +1,428 @@
+---
+title: "Models and Time-Varying Plots"
+author: "Melissa Lowe"
+date: "6/21/2019"
+output: pdf_document
+---
+
+####  In this case, no outliers were removed.
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.path='TVMonitorPlots/')
+```
+
+```{r, include=FALSE}
+library(lme4)
+library(lmtest)
+library(dplyr)
+library(readxl)
+library(utils)
+library(knitr)
+library(ggplot2)
+library(plyr)
+library(lmerTest)
+library(reshape2)
+library(stargazer)
+library(rmcorr)
+library(RColorBrewer)
+
+```
+
+
+```{r, include=FALSE}
+setwd("~/Desktop")
+dapss <- read.csv("~/Desktop/ReproducibleItemsforDAPS/DAPS_2Cohort.csv")
+daps <-dapss[, -1]
+```
+
+```{r, include=FALSE}
+#### only run this once so that the data sets don't get mixed up ####
+
+names(daps) #find the right columns
+pollution <- daps[,c(1:3, 27:40, 56:61)] #subset daps to only pollution data for simplification
+names(pollution) #check that we have the right names
+
+id <- daps$id
+visit <- daps$visit
+season <- daps$season
+
+```
+
+Part of what we're interested in is estimating the mean bias and mean variance. If we assume that the "true" value is that from the wearable monitor, how do we estimate the mean bias? What about the mean variance?
+
+Variance is defined as:
+\[\textrm{Var}[ \widehat{x} ]=E[(\widehat{x} -E[\widehat{x}])^{2} ] \]
+
+\[ \textrm{Var}[ \widehat{x}]=E[\widehat{x}^2]-E[\widehat{x}]^2 \]
+
+Bias is defined as follows:
+
+\[ \textrm{Bias}[ \widehat{x}]=E[\widehat{x}-x]=E[\widehat{x}]-x \]
+
+```{r, echo=FALSE}
+
+##### PM10 #####
+wearable <- exp(daps$log_vest_pm10)
+stationary <- exp(daps$log_msp_pm10)
+cdphe_mean <- (daps$CDPHE_PM10_mean)
+cdphe_max <- exp(daps$log_CDPHE_PM10_max)
+
+
+PM10 <- as.data.frame(cbind(id, visit, season, wearable, stationary, cdphe_mean, cdphe_max))
+
+pm10 <- melt(PM10, id.vars = c("id", "visit", "season"), measure.vars = c( "wearable", "stationary","cdphe_mean","cdphe_max"), variable.name = "type", value.name = "PM10",
+  factorsAsStrings = TRUE)
+
+names(pm10) <- c("id", "visit", "season", "type", "PM10")
+
+
+#Understanding the mean bias and variance between the wearable (our "truth") and the two other possible monitors. 
+
+#Mean Bias of the CDPHE MEAN 
+bias_cdphe <-mean(mean(cdphe_mean, na.rm=TRUE) - wearable, na.rm=TRUE)
+
+#Mean Variance of the CDPHE MEAN:
+
+  #Mean of the Sample Squared:
+ss <- mean(cdphe_mean*cdphe_mean, na.rm=TRUE)
+
+  #Mean of the Squared Sample:
+ess <-(mean(cdphe_mean, na.rm=TRUE)*mean(cdphe_mean, na.rm=TRUE))
+
+mvar_cdphe <- ss-ess
+
+var_cdphe <- var(cdphe_mean, na.rm=TRUE)
+
+#Mean Bias of the Stationary Monitor
+bias_stat <-mean(mean(stationary, na.rm=TRUE)-wearable, na.rm=TRUE)
+#Mean Variance of the Stationary Monitor
+  #Mean of the Sample Squared:
+ss <- mean(stationary*stationary, na.rm=TRUE)
+
+  #Mean of the Squared Sample:
+ess <-(mean(stationary, na.rm=TRUE)*mean(stationary, na.rm=TRUE))
+
+mvar_stat <- ss-ess
+
+var_stat <- var(stationary, na.rm=TRUE)
+
+#then, we repeat the means of the stationary and the cdphe across the length of the wearable values
+mean_stat <- rep((mean(stationary, na.rm=TRUE)), length(wearable))
+mean_cdphe <- rep((mean(cdphe_mean, na.rm=TRUE)), length(wearable))
+
+#and create a new data frame comparing the stationary/cdphe means to each value of the wearable. 
+dat2 <- as.data.frame(cbind(wearable, mean_stat, mean_cdphe))
+
+#make two vectors of the bias, the mean variance, and the variance of the cdphe and the stationary respectively to print
+CDPHE_VAL <- c(bias_cdphe, mvar_cdphe, var_cdphe)
+STAT_VAL <- c(bias_stat, mvar_stat, var_stat)
+```
+### CDPHE PM10: Bias, Mean Variance, Variance
+```{r, echo=FALSE}
+CDPHE_VAL
+```
+### Stationary PM10: Bias, Mean Variance, Variance
+```{r, echo=FALSE}
+STAT_VAL
+```
+
+
+
+
+
+
+```{r, echo=FALSE}
+#### NO2 #####
+wearable <- exp(daps$log_vest_NO2)
+stationary <- exp(daps$log_stat_NO2)
+cdphe_mean <- exp(daps$log_CDPHE_NO2_mean)
+cdphe_max <- exp(daps$log_CDPHE_NO2_max)
+  
+NO2 <- as.data.frame(cbind(id, visit, season, wearable, stationary, cdphe_mean, cdphe_max))
+
+no2 <- melt(NO2, id.vars = c("id", "visit", "season"), measure.vars = c( "wearable", "stationary","cdphe_mean","cdphe_max"),
+  variable.name = "type", value.name = "NO2",
+  factorsAsStrings = TRUE)
+
+names(no2) <- c("id", "visit", "season", "type", "NO2")
+
+#Mean Bias of the CDPHE MEAN 
+bias_cdphe <- mean(mean(cdphe_mean, na.rm=TRUE) - wearable, na.rm=TRUE)
+
+
+
+#Mean Variance of the CDPHE MEAN:
+
+  #Mean of the Sample Squared:
+ss <- mean(cdphe_mean*cdphe_mean, na.rm=TRUE)
+
+  #Mean of the Squared Sample:
+ess <-(mean(cdphe_mean, na.rm=TRUE)*mean(cdphe_mean, na.rm=TRUE))
+
+mvar_cdphe <- ss-ess
+
+var_cdphe <- var(cdphe_mean, na.rm=TRUE)
+
+#Mean Bias of the Stationary Monitor
+bias_stat <- mean(mean(stationary, na.rm=TRUE)-wearable, na.rm=TRUE)
+#Mean Variance of the Stationary Monitor
+  #Mean of the Sample Squared:
+ss <- mean(stationary*stationary, na.rm=TRUE)
+
+  #Mean of the Squared Sample:
+ess <-(mean(stationary, na.rm=TRUE)*mean(stationary, na.rm=TRUE))
+
+mvar_stat <-ss-ess
+
+var_stat <- var(stationary, na.rm=TRUE)
+
+
+#then, we repeat the means of the stationary and the cdphe across the length of the wearable values
+mean_stat <- rep((mean(stationary, na.rm=TRUE)), length(wearable))
+mean_cdphe <- rep((mean(cdphe_mean, na.rm=TRUE)), length(wearable))
+
+#and create a new data frame comparing the stationary/cdphe means to each value of the wearable. 
+dat2 <- as.data.frame(cbind(wearable, mean_stat, mean_cdphe))
+
+
+#make two vectors of the bias, the mean variance, and the variance of the cdphe and the stationary respectively to print
+CDPHE_VAL <- c(bias_cdphe, mvar_cdphe, var_cdphe)
+STAT_VAL <- c(bias_stat, mvar_stat, var_stat)
+```
+
+### CDPHE NO2: Bias, Mean Variance, Variance
+```{r, echo=FALSE}
+CDPHE_VAL
+```
+### Stationary NO2: Bias, Mean Variance, Variance
+```{r, echo=FALSE}
+STAT_VAL
+```
+
+
+```{r, echo=FALSE}
+#### O3 #####
+wearable <- daps$vest_O3
+cdphe_mean <- daps$CDPHE_O3_mean
+cdphe_max <- daps$CDPHE_O3_max
+
+O3 <- as.data.frame(cbind(id, visit, season, wearable, cdphe_mean, cdphe_max))
+
+o3 <- melt(O3, id.vars = c("id", "visit", "season"), measure.vars = c( "wearable", "cdphe_mean", "cdphe_max"),
+  variable.name = "type", value.name = "O3",
+  factorsAsStrings = TRUE)
+
+names(o3) <- c("id", "visit", "season", "type", "O3")
+
+#Mean Bias of the CDPHE MEAN 
+bias_cdphe <- mean(mean(cdphe_mean, na.rm=TRUE) - wearable, na.rm=TRUE)
+
+#Mean Variance of the CDPHE MEAN:
+
+  #Mean of the Sample Squared:
+ss <- mean(cdphe_mean*cdphe_mean, na.rm=TRUE)
+
+  #Mean of the Squared Sample:
+ess <-(mean(cdphe_mean, na.rm=TRUE)*mean(cdphe_mean, na.rm=TRUE))
+
+#mean variance
+mvar_cdphe <- ss-ess
+
+#actual variance
+var_cdphe <- var(cdphe_mean, na.rm=TRUE)
+
+#make a vector to compare against
+mean_cdphe <- rep((mean(cdphe_mean, na.rm=TRUE)), length(wearable))
+
+dat2 <- as.data.frame(cbind(wearable, mean_cdphe))
+#make a vector to show the bias, mean variance, and variance next to each other
+CDPHE_VAL <- c(bias_cdphe, mvar_cdphe, var_cdphe)
+
+```
+
+### CDPHE O3: Bias, Mean Variance, Variance
+```{r, echo=FALSE}
+CDPHE_VAL
+```
+
+
+#   Evaluating differences between monitors using mixed models. 
+
+## PM10, MEASUREMENT DIFFERENCES
+
+Evaluation using a mixed model with random intercept for each id. For the first model reference categories are the wearable monitor and summer. We see a slight significant difference between the wearable monitor and the stationary monitor and a significant difference between the wearable monitor and the CDPHE monitor. Additionally, the fall has significantly higher PM10 values than the summer. In the second model, we see again the slight difference between the wearable and stationary monitor but also a slight difference between the stationary and the CDPHE. 
+
+
+```{r, echo=FALSE}
+
+pm10_3 <- subset(pm10, type != "cdphe_max")
+
+pm10_3$season <- as.factor(pm10_3$season)
+pm10_2 <- pm10_3
+
+pm10_5 <- pm10_3
+
+
+#summary(pm10monit2)
+
+
+
+pm10_2<- within(pm10_2, type <- relevel(type, ref = "wearable"))
+
+
+pm10_5<- within(pm10_5, type <- relevel(type, ref = "stationary"))
+
+#with the personal monitor as the reference category
+pm10monit <- lmer(PM10 ~ type + season + (1|id), data = pm10_2 )
+pm10monit2 <- lmer(PM10 ~ type + season + (1|id), data = pm10_5 )
+
+
+#summary(pm10monit)
+#summary(pm10monit2)
+
+class(pm10monit) <- "lmerMod"
+class(pm10monit2) <- "lmerMod"
+
+```
+
+```{r, echo=FALSE}
+stargazer(pm10monit, type="text", style="all", ci=T, ci.level=0.95, summary=FALSE, digits=4, star.cutoffs=c(0.05, 0.01, 0.001), title="PM10 Monitor Differences,ref = wearable", covariate.labels=c("Stationary", "CDPHE", "Fall", "Winter", "Spring", "Intercept"))
+```
+
+```{r, echo=FALSE}
+
+stargazer(pm10monit2, type="text", style="all", ci=T, ci.level=0.95, summary=FALSE, digits=4, star.cutoffs=c(0.05, 0.01, 0.001), title="PM10 Monitor Differences, ref=stationary", covariate.labels=c("Wearable", "CDPHE", "Fall", "Winter", "Spring", "Intercept"))
+
+```
+
+
+```{r, echo=FALSE}
+
+levels(pm10_5$type )[levels(pm10_5$type )=="cdphe_mean"] <- "CDPHE"
+#BOXPLOT
+p <- ggplot(pm10_5, aes(type, PM10))
+p + geom_boxplot()+
+  xlab("Monitor")+
+  ylab("PM10")+ 
+  labs(title = "Measured Pollutant by Monitor Type, w/outlier", color ="Type")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  theme(plot.title=element_text(face="bold", size=15)) +theme(text = element_text(size = 15, color= "black"))
+
+#SMOOTHED PLOTS OVER TIME
+b <- ggplot(pm10_5, aes(as.numeric(season), PM10, color=type, shape=type))
+b + geom_point()+ xlab("Season") + ylab(expression( PM[10]))+ labs(title = "Measured Pollutant by Monitor Type, w/outlier", color ="Type", shape ="Type")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text( face="bold", size=15)) + geom_smooth() + scale_x_continuous(labels=c("1" = "Summer", "2" = "Fall", "3"= "Winter", "4"= "Spring"))+ scale_color_manual(values = c("wearable" = "blue", "stationary" = "limegreen", "CDPHE" = "red")) +theme(text = element_text(size = 15, color= "black"))
+
+#WITH THE OUTLIERS REMOVED
+pm10_3 <- subset(pm10_5, pm10_5$PM10 < 200)
+b <- ggplot(pm10_3, aes(as.numeric(season), PM10, color=type, shape=type))
+b + geom_point()+ xlab("Season") + ylab(expression( PM[10]))+ labs(title = "Measured Pollutant by Monitor Type, w/o outlier", color ="Type", shape ="Type")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+ scale_color_manual(values = c("wearable" = "blue", "stationary" = "limegreen", "CDPHE" = "red"))+theme(plot.title=element_text( face="bold", size=15)) + geom_smooth() + scale_x_continuous(labels=c("1" = "Summer", "2" = "Fall", "3"= "Winter", "4"= "Spring"))+theme(text = element_text(size = 15, color= "black")) 
+
+
+
+
+
+```
+
+
+
+
+
+## NO2 MEASUREMENT DIFFERENCES
+Evaluation using a mixed model with random intercept for each id. The reference categories are the wearable monitor and summer for the first model. We see a significant difference between CDPHE measures and the wearable monitor. In the second model, the reference categories are the stationary monitor and summer. We see that there is also a significant difference between the CDPHE monitor and the stationary monitor. The stationary monitor and the wearable monitor are not significantly different from each other. 
+
+
+```{r, echo=FALSE}
+#### NO2 #####
+
+
+no2_3 <- subset(no2, type != "cdphe_max")
+
+no2_3$season <- as.factor(no2_3$season)
+no2_2 <- no2_3
+
+no2_5 <- no2_3
+
+
+#summary(pm10monit2)
+
+
+
+no2_2<- within(no2_2, type <- relevel(type, ref = "wearable"))
+
+
+no2_5<- within(no2_5, type <- relevel(type, ref = "stationary"))
+
+#with the personal monitor as the reference category
+no2monit <- lmer(NO2 ~ type + season + (1|id), data = no2_2 )
+no2monit2 <- lmer(NO2 ~ type + season + (1|id), data = no2_5 )
+
+
+#summary(no2monit)
+#summary(no2monit2)
+
+class(no2monit) <- "lmerMod"
+class(no2monit2) <- "lmerMod"
+
+```
+
+```{r, echo=FALSE}
+stargazer(no2monit, type="text", style="all", ci=T, ci.level=0.95, summary=FALSE, digits=4, star.cutoffs=c(0.05, 0.01, 0.001), title="NO2 Monitor Differences,ref = wearable", covariate.labels=c("Stationary", "CDPHE", "Fall", "Winter", "Spring", "Intercept"))
+```
+
+
+```{r, echo=FALSE}
+stargazer(no2monit2, type="text", style="all", ci=T, ci.level=0.95, summary=FALSE, digits=4, star.cutoffs=c(0.05, 0.01, 0.001), title="NO2 Monitor Differences, ref=stationary", covariate.labels=c("Wearable", "CDPHE", "Fall", "Winter", "Spring", "Intercept"))
+
+```
+
+```{r, echo=FALSE}
+levels(no2_5$type )[levels(no2_5$type )=="cdphe_mean"] <- "CDPHE"
+
+
+p <- ggplot(no2_5, aes(type, NO2))
+p + geom_boxplot()+xlab("Monitor")+ ylab("NO2")+ labs(title = "Measured Pollutant by Monitor Type", color ="Monitor")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text( face="bold", size=15)) +theme(text = element_text(size = 15, color= "black"))
+
+b <- ggplot(no2_5, aes(as.numeric(season), NO2, color=type, shape =type))
+b + geom_point()+ xlab("Season") + ylab("NO2")+ labs(title = "Measured Pollutant by Monitor Type, w/outlier", color ="Monitor", shape ="Monitor")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text(face="bold", size=15)) + geom_smooth()+ scale_color_manual(values = c("wearable" = "blue", "stationary" = "limegreen", "CDPHE" = "red")) + scale_x_continuous(labels=c("1" = "Summer", "2" = "Fall", "3"= "Winter", "4"= "Spring"))+theme(text = element_text(size = 15, color= "black"))
+
+b <- ggplot(no2_5, aes(as.numeric(season), NO2, color=type, shape =type))
+b + geom_point()+ xlab("Season") + ylab("NO2")+ labs(title = "Measured Pollutant by Monitor Type, w/o outlier", color ="Monitor", shape ="Monitor")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text(face="bold", size=15)) + scale_color_manual(values = c("wearable" = "blue", "stationary" = "limegreen", "CDPHE" = "red"))+ geom_smooth() + scale_x_continuous(labels=c("1" = "Summer", "2" = "Fall", "3"= "Winter", "4"= "Spring"))+theme(text = element_text(size = 15, color= "black"))
+
+
+
+```
+
+
+
+# OZONE MEASUREMENT DIFFERENCES
+
+We see an unsurprising and substantial difference between the CDPHE mean value and the wearable monitor.
+
+```{r, echo=FALSE}
+library(plyr)
+levels(o3$type)[levels(o3$type)=="cdphe_mean"] <- "CDPHE"
+o3_2 <- subset(o3, type != "cdphe_max")
+
+#### O3 #####
+o3monit <- lm(O3 ~ as.factor(type), data = o3_2 )
+#summary(o3monit)
+
+
+#the t-tests should give similar results
+#t.test(O3$vest, O3$cdphe_mean, paired=TRUE, conf.level=0.95)
+
+
+p <- ggplot(o3_2, aes(type, O3))
+p + geom_boxplot() +xlab("Monitor")+ ylab("Ozone")+ labs(title = "Measured Pollutant by Monitor Type", color ="Type")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text( face="bold", size=15)) +theme(text = element_text(size = 15, color= "black"))
+
+stargazer(o3monit, type="text", style="all", ci=T, ci.level=0.95, summary=FALSE, digits=4, star.cutoffs=c(0.05, 0.01, 0.001), title="Ozone Monitor Differences", covariate.labels=c("CDPHE", "Intercept (Wearable)"))
+
+
+```
+

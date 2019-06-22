@@ -1,0 +1,70 @@
+---
+title: "Plots Coef.IQR"
+author: "Melissa Lowe"
+date: "5/23/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.path='Fig_CoefIQR/')
+
+```
+
+
+```{r, echo=FALSE}
+library(ggplot2)
+output <- read.csv("~/Desktop/ReproducibleItemsforDAPS/DAPS_OUTPUT2.csv", header=TRUE)
+
+```
+
+
+
+```{r, echo=FALSE}
+
+levels(output$Outcome)
+# Rename by name: change "beta" to "two"
+levels(output$Outcome)[levels(output$Outcome)=="CACT_ACT_cont"] <- "CACT-ACT"
+levels(output$Outcome)[levels(output$Outcome)=="CASI_Total_wFxn"] <- "CASI Score"
+levels(output$Outcome)[levels(output$Outcome)=="cbc_abs_eos"] <- "Absolute Eosinophils"
+levels(output$Outcome)[levels(output$Outcome)=="cbc_abs_neut"] <- "Absolute Neutrophils"
+levels(output$Outcome)[levels(output$Outcome)=="cbc_percent_eos"] <- "% Eosinophils"
+levels(output$Outcome)[levels(output$Outcome)=="cbc_percent_neut"] <- "% Neutrophils"
+levels(output$Outcome)[levels(output$Outcome)=="FEF2575_pp_GLI"] <- "FEF-2575 % pred"
+levels(output$Outcome)[levels(output$Outcome)=="FEF2575_Zscore_GLI"] <- "FEF-2575 Z-score"
+levels(output$Outcome)[levels(output$Outcome)=="FeNO_avg"] <- "Avg. FeNO"
+levels(output$Outcome)[levels(output$Outcome)=="FEV1_FVC"] <- "FEV1/FVC"
+levels(output$Outcome)[levels(output$Outcome)=="FEV1_FVC_pp_GLI"] <- "FEV1/FVC % pred"
+levels(output$Outcome)[levels(output$Outcome)=="FEV1_FVC_Zscore_GLI"] <- "FEV1/FVC Z-score"
+levels(output$Outcome)[levels(output$Outcome)=="FEV1_pp_GLI"] <- "FEV1 % pred"
+levels(output$Outcome)[levels(output$Outcome)=="FEV1_Zscore_GLI"] <- "FEV1 Z-score"
+levels(output$Outcome)[levels(output$Outcome)=="FVC_pp_GLI"] <- "FVC % pred"
+levels(output$Outcome)[levels(output$Outcome)=="FVC_Zscore_GLI"] <- "FVC Z-score"
+levels(output$Outcome)[levels(output$Outcome)=="log_cbc_abs_neut"] <- "Absolute Neutrophils -log"
+levels(output$Outcome)[levels(output$Outcome)=="log_cbc_percent_neut"] <- "% Neutrophils -log"
+levels(output$Outcome)[levels(output$Outcome)=="log_cbc_wbc"] <- "White blood cell count - log"
+levels(output$Outcome)[levels(output$Outcome)=="log_FeNO_avg"] <- "Avg. FeNO - log"
+levels(output$Outcome)[levels(output$Outcome)=="cbc_wbc"] <- "White blood cell count"
+outcomes <- unique(as.character(output$Outcome))
+exposures <- unique(output$Exposure)
+
+for (i in 1:21) {
+outcomedat <- subset(output, Outcome == outcomes[i])
+outcomedat$color[outcomedat$Exposure == "endo_m3"] <-"red"
+outcomedat$color[outcomedat$Exposure == "gluc_m3"] <-"orangered2"
+outcomedat$color[outcomedat$Exposure == "vest_O3"] <-"gold4"
+outcomedat$color[outcomedat$Exposure == "CDPHE_O3_mean"] <-"chartreuse3"
+outcomedat$color[outcomedat$Exposure == "log_vest_pm10"] <-"forestgreen"
+outcomedat$color[outcomedat$Exposure == "log_msp_pm10"] <-"turquoise4"
+outcomedat$color[outcomedat$Exposure == "CDPHE_PM10_mean"] <-"blue3"
+outcomedat$color[outcomedat$Exposure == "log_vest_NO2"] <-"darkorchid3"
+outcomedat$color[outcomedat$Exposure == "log_stat_NO2"] <-"maroon"
+outcomedat$color[outcomedat$Exposure == "log_CDPHE_NO2_mean"] <-"deeppink2"
+outcomedat$color[outcomedat$Exposure == "nicalert"] <-"mediumvioletred"
+dotchart(outcomedat$Coef_IQR,labels=outcomedat$Exposure,cex=.7,
+   main=paste0("Relative Exposure Influence - ",outcomes[i]), 
+   xlab="Coefficient/IQR", gcolor="blue", color=outcomedat$color)
+
+} 
+
+
+```

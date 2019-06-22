@@ -1,0 +1,306 @@
+---
+title: "DAPS Air Pollution Monitor Differences, Correlation and Basic Plots"
+author: "Melissa Lowe"
+date: "6/4/19"
+output: pdf_document
+---
+
+#### In this case, no outliers were removed. 
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.path='CorrPlots/')
+```
+
+
+```{r, include=FALSE}
+library(lme4)
+library(lmtest)
+library(dplyr)
+library(readxl)
+library(utils)
+library(knitr)
+library(ggplot2)
+library(plyr)
+library(lmerTest)
+library(reshape2)
+library(stargazer)
+library(rmcorr)
+library(RColorBrewer)
+
+```
+
+
+```{r, include=FALSE}
+setwd("~/Desktop")
+dapss <- read.csv("~/Desktop/ReproducibleItemsforDAPS/DAPS_2Cohort.csv")
+daps <-dapss[, -1]
+```
+
+
+# Basic Correlations
+
+### Correlation of CDPHE Mean Ozone and Wearable Ozone
+```{r, echo=FALSE}
+
+#correlation of ozone
+o3corr <- cor.test(daps$vest_O3, daps$CDPHE_O3_mean, method="pearson")
+o3corr
+```
+### Plot
+```{r, echo=FALSE}
+o3corr_2 <- lm(CDPHE_O3_mean ~ vest_O3, data=daps)
+
+plot(daps$vest_O3, daps$CDPHE_O3_mean, col="blue", lty= 3, pch=19, xlab=expression(paste("Wearable" , ~ O[3])), ylab = expression(paste("CDPHE" , ~ O[3])), main= expression(paste("Correlations between CDPHE and Wearable" , ~ O[3])))
+abline(o3corr_2, col="black", lty=2, lwd=3)
+
+text(12, 35, expression(bold(rho)[O[3]] == 0.075), cex=1)
+text(12, 32, expression(italic(p-value) == 0.674), cex = 0.6)
+```
+
+
+### Correlation of Stationary PM1O and Wearable PM10
+
+```{r, echo=FALSE}
+#correlation of pm10
+pm10corr <- rmcorr(id, log_vest_pm10, log_msp_pm10,daps)
+pm10corr 
+```
+
+### Plot
+```{r, echo=FALSE}
+
+blueset <- brewer.pal(8, 'Blues')
+pal <- colorRampPalette(blueset)
+plot(pm10corr,  overall = TRUE, palette = pal, overall.col = 'black', lty = 3, xlab = expression(paste("Wearable" , ~ PM[10])), ylab = expression(paste("Stationary" , ~ PM[10])), main= expression(paste("Correlations between Stationary and Wearable" , ~ PM[10]))) 
+
+
+text(5.25, 4, expression(bold(rho)[PM[10]] == 0.502), cex=1)
+text(5.25, 3.75, expression(italic(p-value) == 5.13e-6), cex = 0.6)
+```
+
+
+### Correlation of CDPHE mean PM10 and wearable PM10
+```{r, echo=FALSE}
+pm10corr2 <-rmcorr(id, log_vest_pm10, log(daps$CDPHE_PM10_mean), daps)
+pm10corr2
+```
+
+### Plot
+```{r, echo=FALSE}
+blueset <- brewer.pal(8, 'Blues')
+pal <- colorRampPalette(blueset)
+plot(pm10corr2, overall = TRUE, palette = pal, overall.col = 'black',lty = 3, xlab = expression(paste("Wearable" , ~ PM[10])), ylab = expression(paste("CDPHE" , ~ PM[10])), main= expression(paste("Correlations between CDPHE and Wearable" , ~ PM[10]))) 
+
+text(5.25, 3.25, expression(bold(rho)[PM[10]] == -0.15), cex=1)
+text(5.25, 3.15, expression(italic(p-value) == 0.21), cex = 0.6)
+```
+
+### Correlation of Stationary PM10 and CDPHE PM10
+```{r, echo=FALSE}
+pm10corr3 <- rmcorr(id, log_msp_pm10, log(CDPHE_PM10_mean), daps)
+pm10corr3
+```
+
+### PLOT
+```{r, echo=FALSE}
+
+plot(pm10corr3, overall = TRUE, palette = pal, overall.col = 'black',lty = 3, xlab = expression(paste("Stationary" , ~ PM[10])), ylab = expression(paste("CDPHE" , ~ PM[10])), main= expression(paste("Correlations between CDPHE and Stationary" , ~ PM[10]))) 
+
+text(5.2, 2.7, expression(bold(rho)[PM[10]] == -0.06), cex=1)
+text(5.2, 2.6, expression(italic(p-value) == 0.59), cex = 0.6)
+
+
+
+```
+
+### Plot of Relative Correlation with Wearable Monitor for PM10 - includes log values
+```{r, echo=FALSE}
+
+
+b <- ggplot(daps)
+b + 
+geom_point(aes(log_vest_pm10, log_msp_pm10), color = "red1", shape =17)+
+geom_smooth(aes(log_vest_pm10, log_msp_pm10), color = "red1", method="lm", linetype = "dotdash")+
+geom_point(aes(log_vest_pm10, log(CDPHE_PM10_mean)),color= "mediumblue", shape = 19) +
+geom_smooth(aes(log_vest_pm10, log(CDPHE_PM10_mean)), color = "mediumblue", method ="lm", linetype= "solid") +
+annotate(geom="text", x=4.9, y=1.9, label="CDPHE vs. Wearable, \n corr = -0.15, p=0.21",
+              color="mediumblue", fontface="bold")+
+annotate(geom="text", x=5, y=5.2, label="Stationary vs. Wearable, \n corr = 0.5, p=5.1e-6",
+              color="red1", fontface="bold")+
+xlab(expression(paste("wearable" , ~ log(PM[10])))) +
+ylab(expression(log(PM[10])))+ 
+labs(title = "Relative Correlation with Wearable Monitor")+ 
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+theme(plot.title=element_text( size=15)) +
+theme(text = element_text(size = 15, color= "black"))
+
+```
+
+
+### Plot of Relative Correlation with Wearable Monitor for PM10 - includes unlogged values
+```{r, echo=FALSE}
+
+b <- ggplot(daps)
+b + 
+geom_point(aes(exp(log_vest_pm10), exp(log_msp_pm10)), color = "red1", shape =17)+
+geom_smooth(aes(exp(log_vest_pm10), exp(log_msp_pm10)), color = "red1", method="lm", linetype = "dotdash")+
+geom_point(aes(exp(log_vest_pm10), CDPHE_PM10_mean),color= "mediumblue", shape = 19) +
+geom_smooth(aes(exp(log_vest_pm10), CDPHE_PM10_mean), color = "mediumblue", method ="lm", linetype= "solid") +
+annotate(geom="text", x=200, y=40, label="CDPHE Mean vs. Wearable Monitor, \n corr = -0.15, p=0.21",
+              color="mediumblue", fontface="bold")+
+annotate(geom="text", x=150, y=150, label="Stationary vs. Wearable Monitor, \n corr = 0.5, p=5.1e-6",
+              color="red1", fontface="bold")+
+xlab(expression(paste("wearable" , ~ PM[10]))) +
+ylab(expression(PM[10]))+ 
+labs(title = "Relative Correlation with Wearable Monitor")+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+theme(plot.title=element_text( size=15)) +
+theme(text = element_text(size = 15, color= "black"))
+
+```
+
+
+
+### Brief look at health outcomes with exhaled nitric oxide and PM10.
+
+Here, we can see the moderate weakness of the relationship between PM10 and FeNO.
+
+```{r, echo=FALSE}
+
+b <- ggplot(daps)
+b + 
+geom_point(aes(log_vest_pm10, log_FeNO_avg), color = "green3")+
+geom_smooth(aes(log_vest_pm10, log_FeNO_avg), color = "green3")+
+geom_point(aes(log_msp_pm10, log_FeNO_avg),color= "blue") +
+geom_smooth(aes(log_msp_pm10, log_FeNO_avg), color = "blue") +
+annotate(geom="text", x=4.5, y=1.5, label=expression(paste("log(FeNO) and Stationary" , ~ PM[10])),
+              color="blue", size =4)+
+  annotate(geom="text", x=2.5, y=5, label=expression(paste("log(FeNO) and Wearable" , ~ PM[10])),
+              color="darkgreen", size=4)+
+xlab(expression(log(PM[10]))) +
+ylab("log(FeNO)")+ 
+labs(title = expression(paste("Exhaled Nitric Oxide and", ~ PM[10] ~ "Exposure")))+ 
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+theme(plot.title=element_text( face="bold", size=16)) +
+theme(text = element_text(size = 16, color= "black")) 
+
+```
+
+
+### Correlation between stationary NO2 and wearable NO2
+```{r, echo=FALSE}
+
+#correlation of no2
+
+no2corr <- rmcorr(id, log_vest_NO2, log_stat_NO2,daps)
+no2corr
+```
+
+### Plot
+```{r, echo=FALSE}
+plot(no2corr, overall = TRUE, palette = pal, overall.col = 'black',lty = 3, xlab = expression(paste("Wearable" , ~ NO[2])), ylab = expression(paste("Stationary" , ~ NO[2])), main= expression(paste("Correlations between Stationary and Wearable" , ~ NO[2]))) 
+
+text(3,1.4, expression(bold(rho)[NO[2]] == 0.95), cex=1)
+text(3, 1, expression(italic(p-value) == 2.49e-36), cex = 0.6)
+```
+
+
+### Correlation between CDPHE mean NO2 and wearable NO2
+```{r, echo=FALSE}
+
+no2corr2 <- rmcorr(id,log_vest_NO2, log_CDPHE_NO2_mean, daps)
+no2corr2
+```
+
+### Plot
+```{r, echo=FALSE}
+plot(no2corr2, overall = TRUE, palette = pal, overall.col = 'black',lty = 3, xlab = expression(paste("Wearable" , ~ NO[2])), ylab = expression(paste("CDPHE" , ~ NO[2])), main= expression(paste("Correlations between CDPHE and Wearable" , ~ NO[2]))) 
+
+text(0,.95, expression(bold(rho)[NO[2]] == 0.23), cex=1)
+text(0, .92, expression(italic(p-value) == 0.051), cex = 0.6)
+```
+
+
+### Correlation between CDPHE mean NO2 and stationary NO2
+```{r, echo=FALSE}
+no2corr3 <- rmcorr(id, log_stat_NO2, log_CDPHE_NO2_mean, daps)
+no2corr3
+```
+
+### Plot
+```{r, echo=FALSE}
+plot(no2corr3, overall = TRUE, palette = pal, overall.col = 'black',lty = 3, xlab = expression(paste("Stationary" , ~ NO[2])), ylab = expression(paste("CDPHE" , ~ NO[2])), main= expression(paste("Correlations between CDPHE and Stationary" , ~ NO[2]))) 
+
+text(0,.95, expression(bold(rho)[NO[2]] == 0.19), cex=1)
+text(0, .92, expression(italic(p-value) == 0.098), cex = 0.6)
+
+```
+
+
+### Plot of Relative Correlation with Wearable Monitor for PM10 - includes logged values
+```{r, echo=FALSE}
+c <- ggplot(daps)
+c + 
+geom_point(aes(log_vest_NO2, log_stat_NO2), color = "red1", shape =17)+
+geom_smooth(aes(log_vest_NO2, log_stat_NO2), color = "red1", method="lm", linetype = "dotdash")+
+geom_point(aes(log_vest_NO2, log_CDPHE_NO2_mean),color= "mediumblue", shape = 19) +
+geom_smooth(aes(log_vest_NO2, log_CDPHE_NO2_mean), color = "mediumblue", method ="lm", linetype= "solid") +
+annotate(geom="text", x=0.25, y=4.5, label="CDPHE Mean vs. Wearable Monitor, \n corr = 0.23, p=0.05",
+              color="mediumblue", fontface="bold")+
+annotate(geom="text", x=2, y=0, label="Stationary vs. Wearable Monitor , \n corr = 0.95, p=2.5e-36",
+              color="red1", fontface="bold")+
+xlab(expression(paste("Wearable" , ~ log(NO[2])))) +
+ylab(expression( log(NO[2])))+
+labs(title = "Relative Correlation with Wearable Monitor")+ 
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+theme(plot.title=element_text( face="bold", size=15)) +
+theme(text = element_text(size = 15, color= "black")) 
+```
+
+### Plot of Relative Correlation with Wearable Monitor for PM10 - includes unlogged values
+```{r, echo=FALSE}
+c <- ggplot(daps)
+c + 
+geom_point(aes(exp(log_vest_NO2), exp(log_stat_NO2)), color = "red1", shape =17)+
+geom_smooth(aes(exp(log_vest_NO2), exp(log_stat_NO2)), color = "red1", method="lm", linetype = "dotdash")+
+geom_point(aes(exp(log_vest_NO2), exp(log_CDPHE_NO2_mean)),color= "mediumblue", shape = 19) +
+geom_smooth(aes(exp(log_vest_NO2), exp(log_CDPHE_NO2_mean)), color = "mediumblue", method ="lm", linetype= "solid") +
+annotate(geom="text",  x=30, y=0, label="CDPHE Mean vs. Wearable NO2, \n corr = 0.23, p=0.05",
+              color="mediumblue", fontface="bold")+
+annotate(geom="text", x=40, y=90, label="Stationary vs. Wearable NO2, \n corr = 0.95, p=2.5e-36",
+              color="red1", fontface="bold")+
+xlab(expression(paste("Wearable" , ~ NO[2]))) +
+ylab(expression(NO[2]))+ 
+labs(title = "Relative Correlation with Wearable Monitor")+ 
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+theme(plot.title=element_text(face="bold", size=15)) +
+theme(text = element_text(size = 15, color= "black"))
+
+```
+
+
+Correlation of glucans with endotoxins
+```{r, echo = FALSE}
+
+
+#correlation of glucans with endotoxins
+glendocorr3 <- cor.test(daps$gluc_m3, log(daps$endo_m3), method="pearson")
+glendocorr3
+
+glendocorr2 <- lm(daps$gluc_m3 ~ log(daps$endo_m3), data=daps)
+
+plot(log(daps$endo_m3),daps$gluc_m3 , col="blue", lty= 3, pch=19, xlab=("Log(Endotoxin) Value"), ylab = ("Glucan Value"), main= ("Correlations between Glucans and Endotoxins"))
+abline(glendocorr2, col="black", lty=2, lwd=3)
+
+text(-1, 400, expression(bold(rho) == 0.51), cex=1)
+text(-1, 370, expression(italic(p-value) == 0.0006), cex = 0.7)
+
+
+```
+
+
