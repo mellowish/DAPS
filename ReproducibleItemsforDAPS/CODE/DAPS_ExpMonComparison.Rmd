@@ -1,14 +1,14 @@
 ---
-title: "DAPS Air Pollution Monitor Differences, Correlation and Basic Plots"
+title: "DAPS Air Pollution Monitor Differences, Correlation and Basic Plots \n OUTLIERS REMOVED"
 author: "Melissa Lowe"
-date: "6/4/19"
+date: "6/24/19"
 output: pdf_document
 ---
 
-#### In this case, no outliers were removed. 
+#### In this case, NO OUTLIERS WERE REMOVED 
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.path='CorrPlots/')
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.path='CorrPlots_N0_OUTLIERS/')
 ```
 
 
@@ -33,7 +33,7 @@ library(RColorBrewer)
 ```{r, include=FALSE}
 setwd("~/Desktop")
 dapss <- read.csv("~/Desktop/ReproducibleItemsforDAPS/DAPS_2Cohort.csv")
-daps <-dapss[, -1]
+daps <-dapss[, -1] #
 ```
 
 
