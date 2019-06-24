@@ -22,7 +22,7 @@ library(plyr)
 Original Data Files
 
 ```{r}
-setwd("~/Desktop/ReproducibleItemsforDAPS") 
+setwd("~/Desktop/DAPS_REPO/ReproducibleItemsforDAPS/DATA_RAW") 
 
 name.gluc <- c("visit", "num", "id", "sample", "pm_wt", "endo_ml", "gluc_ml", "endo_m3", "gluc_m3", "note")
 name.demo <- c("id", "visit", "season", "cohort", "X__1", "age", "gender", "race_afam", "X__2","X__3","X__4","X__5","X__6","X__7")

@@ -34,7 +34,7 @@ library(magrittr)
 
 ```{r, include=FALSE}
 setwd("~/Desktop/ReproducibleItemsforDAPS")
-dapss <- read.csv("~/Desktop/ReproducibleItemsforDAPS/DAPS_2Cohort.csv") #import data
+dapss <- read.csv("~/Desktop/DAPS_REPO/ReproducibleItemsforDAPS/DATA_PROCESSED/DAPS_2Cohort.csv") #import data
 daps <-dapss[, -1]
 
 daps_s <- subset(daps, season=="summer") #values for just ozone

@@ -32,7 +32,7 @@ library(RColorBrewer)
 
 ```{r, include=FALSE}
 setwd("~/Desktop")
-dapss <- read.csv("~/Desktop/ReproducibleItemsforDAPS/DAPS_2Cohort.csv")
+dapss <- read.csv("~/Desktop/DAPS_REPO/ReproducibleItemsforDAPS/DATA_PROCESSED/DAPS_2Cohort.csv")
 daps <-dapss[, -1] #
 ```
 

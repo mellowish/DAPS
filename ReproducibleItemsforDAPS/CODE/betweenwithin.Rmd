@@ -40,7 +40,7 @@ library(table1)
 ```{r, include=FALSE}
 setwd("~/Desktop/ReproducibleItemsforDAPS")
 
-ddat <- read.csv("~/Desktop/ReproducibleItemsforDAPS/DAPS_AllCohort.csv") #import data set
+ddat <- read.csv("~/Desktop/DAPS_REPO/ReproducibleItemsforDAPS/DATA_PROCESSED/DAPS_AllCohort.csv") #import data set
 
 ddat$id <- as.factor(ddat$id) #ensure that it's treated as a factor
 

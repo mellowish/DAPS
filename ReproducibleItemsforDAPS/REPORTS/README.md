@@ -14,5 +14,5 @@ DAPS_OUTPUT1.csv | contains all regression output from the primary regressions -
 DAPS_OUTPUT2.csv | contains all regression output from the primary regressions - searchable and easy to use
 Fig_BW_NO2PM10 | contains all figures saved as pdfs from betweenwithin.Rmd
 Fig_CoefIQR | contains all figures saved as pdfs from OUTPUT_PLOTS.Rmd, coef/iqr plots for health outcomes
-OUTPUT_PLOTS.pdf | OUTPUT_PLOTS.Rmd, coef/iqr plots for health outcomes  in a pdf together to read and cross-compare
+OUTPUT_PLOTS.html| OUTPUT_PLOTS.Rmd, coef/iqr plots for health outcomes  in a pdf together to read and cross-compare
 TVMonitorPlots | contains all figures of seasonal variation in monitors of exposures - from DAPS_ExpMonComparison2.Rmd

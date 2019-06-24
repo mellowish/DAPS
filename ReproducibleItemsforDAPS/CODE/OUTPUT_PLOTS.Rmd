@@ -13,7 +13,7 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.path='Fig_CoefIQR/')
 
 ```{r, echo=FALSE}
 library(ggplot2)
-output <- read.csv("~/Desktop/ReproducibleItemsforDAPS/DAPS_OUTPUT2.csv", header=TRUE)
+output <- read.csv("~/Desktop/DAPS_REPO/ReproducibleItemsforDAPS/REPORTS/DAPS_OUTPUT2.csv", header=TRUE)
 
 ```
 

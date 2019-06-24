@@ -22,7 +22,7 @@ library(table1)
 library(plyr)
 
 ## import data from cohort 2 only
-ddat <- read.csv("~/Desktop/ReproducibleItemsforDAPS/DAPS_2Cohort.csv")
+ddat <- read.csv("~/Desktop/DAPS_REPO/ReproducibleItemsforDAPS/DATA_PROCESSED/DAPS_2Cohort.csv")
 
 svg(filename="pm10vest_SVG.svg", 
     width=5, 

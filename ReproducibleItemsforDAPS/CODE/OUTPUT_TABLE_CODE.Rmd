@@ -39,7 +39,7 @@ Extract a smaller number of values to make into a table:
 
 ```{r}
 
-output <- read.csv("~/Desktop/ReproducibleItemsforDAPS/DAPS_OUTPUT1.csv", header=TRUE)
+output <- read.csv("~/Desktop/DAPS_REPO/ReproducibleItemsforDAPS/REPORTS/DAPS_OUTPUT1.csv", header=TRUE)
 
 names(output)#what are the names of the columns currently?
 
